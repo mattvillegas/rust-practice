@@ -1,4 +1,4 @@
-#BST
+# BST
 
 An implementation of a Binary Search Tree in Rust that supports insertion and search operations, with some small tests.
 
