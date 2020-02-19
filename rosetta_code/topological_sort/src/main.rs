@@ -8,7 +8,7 @@ struct Library<'a> {
     num_parents: usize,
 }
 
-fn build_libraries(input: Vec<&str>) -> Result<HashMap<&str, Box<Library>>, &'static str> {
+fn build_libraries(input: Vec<&str>) -> Result<HashMap<&str, Box<Library>>, String> {
     let mut libraries: HashMap<&str, Box<Library>> = HashMap::new();
 
     for input_line in input {
@@ -33,7 +33,7 @@ fn build_libraries(input: Vec<&str>) -> Result<HashMap<&str, Box<Library>>, &'st
                 libraries.get_mut(parent).unwrap().children.push(name);
             }
             if libraries.contains_key(name) && libraries.get(name).unwrap().children.contains(parent){
-                return Err("Cyclic dependency found!")
+                return Err(format!("Cyclic dependency found between {} and {}", parent, name))
             }
             num_parents += 1;
         }
@@ -86,7 +86,7 @@ fn topological_sort<'a>(
 fn main() {
     let input: Vec<&str> = vec![
         "des_system_lib   std synopsys std_cell_lib des_system_lib dw02 dw01 ramlib ieee\n",
-        "dw01             ieee dw01 dware gtech\n",
+        "dw01             ieee dw01 dware gtech dw04\n",
         "dw02             ieee dw02 dware\n",
         "dw03             std synopsys dware dw03 dw02 dw01 ieee gtech\n",
         "dw04             dw04 ieee dw01 dware gtech\n",
