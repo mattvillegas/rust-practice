@@ -8,12 +8,12 @@ struct Library<'a> {
     num_parents: usize,
 }
 
-fn build_libraries(input: Vec<&str>) -> HashMap<&str, Box<Library>> {
+fn build_libraries(input: Vec<&str>) -> Result<HashMap<&str, Box<Library>>, &'static str> {
     let mut libraries: HashMap<&str, Box<Library>> = HashMap::new();
 
     for input_line in input {
         let line_split = input_line.split_whitespace().collect::<Vec<&str>>();
-        let name = line_split.iter().nth(0).unwrap();
+        let name = line_split.get(0).unwrap();
         let mut num_parents: usize = 0;
         for parent in line_split.iter().skip(1) {
             if parent == name {
@@ -29,7 +29,11 @@ fn build_libraries(input: Vec<&str>) -> HashMap<&str, Box<Library>> {
                     }),
                 );
             } else {
+                
                 libraries.get_mut(parent).unwrap().children.push(name);
+            }
+            if libraries.contains_key(name) && libraries.get(name).unwrap().children.contains(parent){
+                return Err("Cyclic dependency found!")
             }
             num_parents += 1;
         }
@@ -47,19 +51,19 @@ fn build_libraries(input: Vec<&str>) -> HashMap<&str, Box<Library>> {
             libraries.get_mut(name).unwrap().num_parents = num_parents;
         }
     }
-    libraries
+    Ok(libraries)
 }
 
 fn topological_sort<'a>(
     mut libraries: HashMap<&'a str, Box<Library<'a>>>,
-) -> Result<Vec<&'a str>, &'static str> {
+) -> Vec<&'a str> {
     let mut options: Vec<&str> = libraries
         .iter()
         .filter(|(_k, v)| v.num_parents == 0)
         .map(|(k, _v)| *k)
         .collect();
     let mut sorted: Vec<&str> = Vec::new();
-    while options.len() != 0 {
+    while !options.is_empty() {
         let cur = options.pop().unwrap();
         for children in libraries
             .get_mut(cur)
@@ -69,9 +73,6 @@ fn topological_sort<'a>(
             .collect::<Vec<&str>>()
         {
             let child = libraries.get_mut(children).unwrap();
-            if child.children.contains(&cur) {
-                return Err("Found cyclic dependency!");
-            }
             child.num_parents -= 1;
             if child.num_parents == 0 {
                 options.push(child.name)
@@ -79,7 +80,7 @@ fn topological_sort<'a>(
         }
         sorted.push(cur);
     }
-    Ok(sorted)
+    sorted
 }
 
 fn main() {
@@ -100,9 +101,12 @@ fn main() {
     ];
 
     let libraries = build_libraries(input);
-    let sort_result = topological_sort(libraries);
-    match sort_result {
-        Ok(sorted_libs) => println!("{:?}", sorted_libs),
-        Err(msg) => println!("{}", msg),
+    match libraries {
+        Ok(libraries) => {
+            let sort_result = topological_sort(libraries);
+            println!("{:?}", sort_result);
+        }
+        Err(msg) => println!("{}", msg)
     }
+
 }
