@@ -50,9 +50,13 @@ fn build_libraries(input: Vec<&str>) -> HashMap<&str, Box<Library>> {
     libraries
 }
 
-fn topological_sort<'a>(mut libraries: HashMap<&'a str, Box<Library<'a>>>) -> Result<Vec<&'a str>, String> {
-    
-    let mut needs_processing = libraries.iter().map(|(k,_v)| k.clone()).collect::<HashSet<&str>>();
+fn topological_sort<'a>(
+    mut libraries: HashMap<&'a str, Box<Library<'a>>>,
+) -> Result<Vec<&'a str>, String> {
+    let mut needs_processing = libraries
+        .iter()
+        .map(|(k, _v)| k.clone())
+        .collect::<HashSet<&str>>();
     let mut options: Vec<&str> = libraries
         .iter()
         .filter(|(_k, v)| v.num_parents == 0)
@@ -79,9 +83,8 @@ fn topological_sort<'a>(mut libraries: HashMap<&'a str, Box<Library<'a>>>) -> Re
     }
     match needs_processing.is_empty() {
         true => Ok(sorted),
-        false => Err(format!("Cycle detected among {:?}", needs_processing))
+        false => Err(format!("Cycle detected among {:?}", needs_processing)),
     }
-    
 }
 
 fn main() {
@@ -104,6 +107,6 @@ fn main() {
     let libraries = build_libraries(input);
     match topological_sort(libraries) {
         Ok(sorted) => println!("{:?}", sorted),
-        Err(msg) => println!("{:?}", msg)
+        Err(msg) => println!("{:?}", msg),
     }
 }
