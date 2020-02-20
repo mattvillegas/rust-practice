@@ -1,5 +1,5 @@
 use std::boxed::Box;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 struct Library<'a> {
@@ -8,7 +8,7 @@ struct Library<'a> {
     num_parents: usize,
 }
 
-fn build_libraries(input: Vec<&str>) -> Result<HashMap<&str, Box<Library>>, String> {
+fn build_libraries(input: Vec<&str>) -> HashMap<&str, Box<Library>> {
     let mut libraries: HashMap<&str, Box<Library>> = HashMap::new();
 
     for input_line in input {
@@ -31,14 +31,6 @@ fn build_libraries(input: Vec<&str>) -> Result<HashMap<&str, Box<Library>>, Stri
             } else {
                 libraries.get_mut(parent).unwrap().children.push(name);
             }
-            if libraries.contains_key(name)
-                && libraries.get(name).unwrap().children.contains(parent)
-            {
-                return Err(format!(
-                    "Cyclic dependency found between {} and {}",
-                    parent, name
-                ));
-            }
             num_parents += 1;
         }
 
@@ -55,10 +47,12 @@ fn build_libraries(input: Vec<&str>) -> Result<HashMap<&str, Box<Library>>, Stri
             libraries.get_mut(name).unwrap().num_parents = num_parents;
         }
     }
-    Ok(libraries)
+    libraries
 }
 
-fn topological_sort<'a>(mut libraries: HashMap<&'a str, Box<Library<'a>>>) -> Vec<&'a str> {
+fn topological_sort<'a>(mut libraries: HashMap<&'a str, Box<Library<'a>>>) -> Result<Vec<&'a str>, String> {
+    
+    let mut needs_processing = libraries.iter().map(|(k,_v)| k.clone()).collect::<HashSet<&str>>();
     let mut options: Vec<&str> = libraries
         .iter()
         .filter(|(_k, v)| v.num_parents == 0)
@@ -81,8 +75,13 @@ fn topological_sort<'a>(mut libraries: HashMap<&'a str, Box<Library<'a>>>) -> Ve
             }
         }
         sorted.push(cur);
+        needs_processing.remove(cur);
     }
-    sorted
+    match needs_processing.is_empty() {
+        true => Ok(sorted),
+        false => Err(format!("Cycle detected among {:?}", needs_processing))
+    }
+    
 }
 
 fn main() {
@@ -103,11 +102,8 @@ fn main() {
     ];
 
     let libraries = build_libraries(input);
-    match libraries {
-        Ok(libraries) => {
-            let sort_result = topological_sort(libraries);
-            println!("{:?}", sort_result);
-        }
-        Err(msg) => println!("{}", msg),
+    match topological_sort(libraries) {
+        Ok(sorted) => println!("{:?}", sorted),
+        Err(msg) => println!("{:?}", msg)
     }
 }
